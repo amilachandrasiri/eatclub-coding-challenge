@@ -7,6 +7,7 @@ import org.eatclub.codingchallenge.model.Restaurant;
 import org.eatclub.codingchallenge.model.RestaurantResponse;
 import org.eatclub.codingchallenge.model.response.ActiveDealsResponse;
 import org.eatclub.codingchallenge.model.response.DealsItem;
+import org.eatclub.codingchallenge.util.ActiveDealsResponseMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
@@ -16,87 +17,79 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class DefaultActiveDealsService implements ActiveDealsService {
 
-  final static DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("h:mma");
-  private final WebClient webClient;
+    final static DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("h:mm[a]");
 
-  @Value("${upstream.restaurants.url}")
-  private String restaurantsUrl;
+    private final WebClient webClient;
+    private final ActiveDealsResponseMapper activeDealsResponseMapper;
+    @Value("${upstream.restaurants.url}")
+    private String restaurantsUrl;
+    @Value("${upstream.restaurants.cacheTTL}")
+    private int cacheTTL;
 
-  @Value("${upstream.restaurants.cacheTTL}")
-  private int cacheTTL;
+    @Override
+    public Mono<ActiveDealsResponse> getActiveDealsAt(String timeOfDay) {
 
-  @Override
-  public Mono<ActiveDealsResponse> getActiveDealsAt(String timeOfDay) {
+        final LocalTime timeOfDayLocalTime = LocalTime.parse(timeOfDay, TIME_FORMATTER);
 
-
-    final LocalTime timeOfDayLocalTime = LocalTime.parse(timeOfDay, TIME_FORMATTER);
-
-    return webClient
-        .get()
-        .uri(restaurantsUrl)
-        .retrieve()
-        .bodyToMono(RestaurantResponse.class)
-        .cache(Duration.ofSeconds(cacheTTL))
-        .map(restaurantResponse -> restaurantResponse.getRestaurants()
-          .stream()
-          .flatMap(restaurant -> restaurant.getDeals()
-            .stream()
-            .filter(deal -> isDealActive(restaurant, deal, timeOfDayLocalTime))
-            .map(activeDeal -> mapToDealsItem(restaurant, activeDeal))).toList())
-        .flatMap(dealsList -> Mono.just(ActiveDealsResponse.builder().deals(dealsList).build()));
-  }
-
-  private boolean isDealActive(
-      final Restaurant restaurant, final Deals deal, final LocalTime timeOfDayLocalTime) {
-    final LocalTime restaurantOpen = LocalTime.parse(restaurant.getOpen(), TIME_FORMATTER);
-    final LocalTime restaurantClose = LocalTime.parse(restaurant.getClose(), TIME_FORMATTER);
-
-    if (restaurantOpen.isAfter(timeOfDayLocalTime)
-        && restaurantClose.isBefore(timeOfDayLocalTime)) {
-      return false;
+        return webClient
+            .get()
+            .uri(restaurantsUrl)
+            .retrieve()
+            .bodyToMono(RestaurantResponse.class)
+            .cache(Duration.ofSeconds(cacheTTL))
+            .map(restaurantResponse -> {
+                final List<DealsItem> dealsItemList = restaurantResponse.getRestaurants()
+                    .stream()
+                    .flatMap(restaurant -> restaurant.getDeals()
+                        .stream()
+                        .filter(deal -> isDealActive(restaurant, deal, timeOfDayLocalTime))
+                        .map(activeDeal -> this.activeDealsResponseMapper.mapToDealsItem(restaurant, activeDeal)))
+                    .toList();
+                return ActiveDealsResponse.builder().deals(dealsItemList).build();
+            });
     }
 
-    if (deal.getQtyLeft() <= 0) {
-      return false;
-    }
+    private boolean isDealActive(
+        final Restaurant restaurant, final Deals deal, final LocalTime timeOfDayLocalTime) {
+        final LocalTime restaurantOpen = LocalTime.parse(restaurant.getOpen(), TIME_FORMATTER);
+        final LocalTime restaurantClose = LocalTime.parse(restaurant.getClose(), TIME_FORMATTER);
 
-    LocalTime actualDealStartTime =
-        !ObjectUtils.isEmpty(deal.getStart())
-            ? LocalTime.parse(deal.getStart(), TIME_FORMATTER)
-            : !ObjectUtils.isEmpty(deal.getOpen())
+        // Deal not active if the restaurant is closed at the requested time, exclude early
+        if (restaurantOpen.isAfter(timeOfDayLocalTime)
+            && restaurantClose.isBefore(timeOfDayLocalTime)) {
+            return false;
+        }
+
+        // No deals left, exclude early
+        if (deal.getQtyLeft() <= 0) {
+            return false;
+        }
+
+        // Actual start time and end times are calculated with following order of priority
+        // deal start -> deal open -> restaurant open
+        // deal end -> deal close -> restaurant close
+        LocalTime actualDealStartTime =
+            !ObjectUtils.isEmpty(deal.getStart())
+                ? LocalTime.parse(deal.getStart(), TIME_FORMATTER)
+                : !ObjectUtils.isEmpty(deal.getOpen())
                 ? LocalTime.parse(deal.getOpen(), TIME_FORMATTER)
                 : restaurantOpen;
 
-    LocalTime actualDealEndTime =
-        !ObjectUtils.isEmpty(deal.getEnd())
-            ? LocalTime.parse(deal.getEnd(), TIME_FORMATTER)
-            : !ObjectUtils.isEmpty(deal.getClose())
+        LocalTime actualDealEndTime =
+            !ObjectUtils.isEmpty(deal.getEnd()) ?
+                LocalTime.parse(deal.getEnd(), TIME_FORMATTER)
+                : !ObjectUtils.isEmpty(deal.getClose())
                 ? LocalTime.parse(deal.getClose(), TIME_FORMATTER)
                 : restaurantClose;
 
-    return actualDealStartTime.isAfter(timeOfDayLocalTime)
-        && actualDealEndTime.isBefore(timeOfDayLocalTime);
-  }
-
-  private DealsItem mapToDealsItem(final Restaurant restaurant, final Deals deal) {
-    return DealsItem.builder()
-        .restaurantObjectId(restaurant.getObjectId())
-        .restaurantName(restaurant.getName())
-        .restaurantAddress1(restaurant.getAddress1())
-        .restarantSuburb(restaurant.getSuburb())
-        .restaurantOpen(restaurant.getOpen())
-        .restaurantClose(restaurant.getClose())
-        .dealObjectId(deal.getObjectId())
-        .discount(deal.getDiscount())
-        .dineIn(deal.isDineIn())
-        .lightning(deal.isLightning())
-        .qtyLeft(deal.getQtyLeft())
-        .build();
-  }
+        return timeOfDayLocalTime.isAfter(actualDealStartTime)
+            && timeOfDayLocalTime.isBefore(actualDealEndTime);
+    }
 }

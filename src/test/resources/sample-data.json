@@ -1,0 +1,195 @@
+{
+    "restaurants": [
+        {
+            "objectId": "DEA567C5-F64C-3C03-FF00-E3B24909BE00",
+            "name": "Masala Kitchen",
+            "address1": "55 Walsh Street",
+            "suburb": "Lower East",
+            "cuisines": [
+                "Indian",
+                "Brazilian",
+                "Breakfast"
+            ],
+            "imageLink": "https://dinnerdeal.backendless.com/api/e14e5098-2393-6d4a-ff80-f5564e042100/v1/files/restaurant_images/DEA567C5-F64C-3C03-FF00-E3B24909BE00_image_0_1520389372647.jpg",
+            "open": "3:00pm",
+            "close": "9:00pm",
+            "deals": [
+                {
+                    "objectId": "DEA567C5-0000-3C03-FF00-E3B24909BE00",
+                    "discount": "50",
+                    "dineIn": "false",
+                    "lightning": "true",
+                    "open": "3:00pm",
+                    "close": "9:00pm",
+                    "qtyLeft": "5"
+                },
+                {
+                    "objectId": "DEA567C5-1111-3C03-FF00-E3B24909BE00",
+                    "discount": "40",
+                    "dineIn": "true",
+                    "lightning": "false",
+                    "qtyLeft": "4"
+                }
+            ]
+        },
+        {
+            "objectId": "D80263E8-FD89-2C70-FF6B-D854ADB8DB00",
+            "name": "ABC Chicken",
+            "address1": "361 Queen Street",
+            "suburb": "Melbourne",
+            "cuisines": [
+                "Asian",
+                "Contemporary",
+                "Fried Chicken",
+                "Korean",
+                "Salads",
+                "Ribs",
+                "Seafood",
+                "Soup",
+                "Vegetarian"
+            ],
+            "imageLink": "https://demo.eccdn.com.au/images/D80263E8-FD89-2C70-FF6B-D854ADB8DB00/eatclub_1634706351211.jpg",
+            "open": "12:00pm",
+            "close": "11:00pm",
+            "deals": [
+                {
+                    "objectId": "D80263E8-0000-2C70-FF6B-D854ADB8DB00",
+                    "discount": "30",
+                    "dineIn": "false",
+                    "lightning": "false",
+                    "qtyLeft": "1"
+                },
+                {
+                    "objectId": "D80263E8-1111-2C70-FF6B-D854ADB8DB00",
+                    "discount": "20",
+                    "dineIn": "true",
+                    "lightning": "false",
+                    "qtyLeft": "4"
+                }
+            ]
+        },
+        {
+            "objectId": "CDB2B42A-248C-EE20-FF45-8D0A8057E200",
+            "name": "Vrindavan",
+            "address1": "261 Harris Street",
+            "suburb": "Pyrmont",
+            "cuisines": [
+                "Indian"
+            ],
+            "imageLink": "https://dinnerdeal.backendless.com:443/api/e14e5098-2393-6d4a-ff80-f5564e042100/v1/files/restaurant_images/CDB2B42A-248C-EE20-FF45-8D0A8057E200_image_0_1602832133.jpg",
+            "open": "6:00pm",
+            "close": "9:00pm",
+            "deals": [
+                {
+                    "objectId": "CDB2B42A-0000-EE20-FF45-8D0A8057E200",
+                    "discount": "10",
+                    "dineIn": "true",
+                    "lightning": "true",
+                    "open": "3:00pm",
+                    "close": "9:00pm",
+                    "qtyLeft": "5"
+                }
+            ]
+        },
+        {
+            "objectId": "B5713CD0-91BF-40C7-AFC3-7D46D26B00BF",
+            "name": "Kekou",
+            "address1": "396 Bridge Road",
+            "suburb": "Richmond",
+            "cuisines": [
+                "Asian",
+                "Chinese",
+                "Contemporary",
+                "Dim Sum",
+                "Dumplings",
+                "Japanese",
+                "Korean",
+                "SouthEast Asian"
+            ],
+            "imageLink": "https://demo.eccdn.com.au/images/08888B47-E966-055F-FFB2-286E36EB3000/08888B47-E966-055F-FFB2-286E36EB3000_image_0_1527640376.jpg",
+            "open": "1:00pm",
+            "close": "11:00pm",
+            "deals": [
+                {
+                    "objectId": "B5713CD0-0000-40C7-AFC3-7D46D26B00BF",
+                    "discount": "10",
+                    "dineIn": "true",
+                    "lightning": "true",
+                    "start": "2:00pm",
+                    "end": "9:00pm",
+                    "qtyLeft": "3"
+                },
+                {
+                    "objectId": "B5713CD0-1111-40C7-AFC3-7D46D26B00BF",
+                    "discount": "15",
+                    "dineIn": "true",
+                    "lightning": "true",
+                    "start": "5:00pm",
+                    "end": "9:00pm",
+                    "qtyLeft": "4"
+                }
+            ]
+        },
+        {
+            "objectId": "21076F54-03E7-3115-FF09-75D07FFC7401",
+            "name": "Gyoza Gyoza Melbourne Central",
+            "address1": "211 La Trobe Street",
+            "suburb": "Melbourne",
+            "cuisines": [
+                "Asian",
+                "Japanese"
+            ],
+            "imageLink": "https://demo.eccdn.com.au/images/21076F54-03E7-3115-FF09-75D07FFC7400/21076F54-03E7-3115-FF09-75D07FFC7400_image_0_1511740595.jpg",
+            "open": "4:00pm",
+            "close": "10:00pm",
+            "deals": [
+                {
+                    "objectId": "B5913CD0-0000-40C7-AFC3-7D46D26B01BF",
+                    "discount": "25",
+                    "dineIn": "true",
+                    "lightning": "false",
+                    "qtyLeft": "3"
+                },
+                {
+                    "objectId": "B5713CD0-1111-40C7-AFC3-7D46D26B00BF",
+                    "discount": "15",
+                    "dineIn": "false",
+                    "lightning": "false",
+                    "qtyLeft": "4"
+                }
+            ]
+        },
+        {
+            "objectId": "178CC02C-69F5-5D90-FF67-84B135B19103",
+            "name": "OzzyThai Cafe Bar ",
+            "address1": "34 Saint Kilda Road",
+            "suburb": "Saint Kilda",
+            "cuisines": [
+                "Asian",
+                "Thai",
+                "Vegetarian",
+                "Vegan",
+                "SouthEast Asian"
+            ],
+            "imageLink": "https://dinnerdeal.backendless.com:443/api/e14e5098-2393-6d4a-ff80-f5564e042100/v1/files/restaurant_images/178CC02C-69F5-5D90-FF67-84B135B19100_image_0_1537525540.jpg",
+            "open": "8:00am",
+            "close": "3:00pm",
+            "deals": [
+                {
+                    "objectId": "B5913CD0-0550-40C7-AFC3-7D46D26B01BF",
+                    "discount": "30",
+                    "dineIn": "false",
+                    "lightning": "false",
+                    "qtyLeft": "8"
+                },
+                {
+                    "objectId": "B5713CD0-1361-40C7-AFC3-7D46D26B00BF",
+                    "discount": "25",
+                    "dineIn": "false",
+                    "lightning": "false",
+                    "qtyLeft": "7"
+                }
+            ]
+        }
+    ]
+}
