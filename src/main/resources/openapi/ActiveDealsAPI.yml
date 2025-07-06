@@ -1,0 +1,240 @@
+openapi: 3.0.3
+info:
+  title: Active Deals API
+  description: API for retrieving active restaurant deals and peak time windows
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@eatclub.com
+
+servers:
+  - url: https://api.eatclub.com/v1
+    description: Production server
+  - url: https://staging-api.eatclub.com/v1
+    description: Staging server
+
+security:
+  - bearerAuth: []
+
+paths:
+  /active-deals:
+    get:
+      summary: Get active restaurant deals
+      description: Retrieves a list of active deals for restaurants based on the specified time of day
+      operationId: getActiveDeals
+      parameters:
+        - name: timeOfDay
+          in: query
+          description: Time of day to filter deals (e.g., morning, afternoon, evening)
+          required: false
+          schema:
+            type: string
+            example: "evening"
+      responses:
+        '200':
+          description: Successful response with active deals
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deals:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RestaurantDeal'
+                  totalCount:
+                    type: integer
+                    description: Total number of deals returned
+                    example: 25
+              example:
+                deals:
+                  - restaurantObjectId: "507f1f77bcf86cd799439011"
+                    restaurantName: "Pizza Palace"
+                    restaurantAddress1: "123 Main Street"
+                    restaurantSuburb: "Downtown"
+                    restaurantOpen: "11:00"
+                    restaurantClose: "23:00"
+                    dealObjectId: "507f1f77bcf86cd799439022"
+                    discount: "20"
+                    dineIn: "true"
+                    lightning: "false"
+                    qtyLeft: "15"
+                  - restaurantObjectId: "507f1f77bcf86cd799439033"
+                    restaurantName: "Burger Barn"
+                    restaurantAddress1: "456 Oak Avenue"
+                    restaurantSuburb: "Midtown"
+                    restaurantOpen: "10:00"
+                    restaurantClose: "22:00"
+                    dealObjectId: "507f1f77bcf86cd799439044"
+                    discount: "15"
+                    dineIn: "false"
+                    lightning: "true"
+                    qtyLeft: "8"
+                totalCount: 2
+        '400':
+          description: Bad request - Invalid parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /peak-time-window:
+    get:
+      summary: Get peak time window information
+      description: Retrieves information about the current peak time window for restaurant deals
+      operationId: getPeakTimeWindow
+      responses:
+        '200':
+          description: Successful response with peak time window data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  peakTimeWindow:
+                    type: string
+                    description: Current peak time window information
+                    example: "Peak hours: 18:00-20:00, High demand period with 40% more deals available"
+                  startTime:
+                    type: string
+                    format: time
+                    description: Peak window start time
+                    example: "18:00"
+                  endTime:
+                    type: string
+                    format: time
+                    description: Peak window end time
+                    example: "20:00"
+                  demandLevel:
+                    type: string
+                    enum: [low, medium, high, peak]
+                    description: Current demand level
+                    example: "high"
+              example:
+                peakTimeWindow: "Peak hours: 18:00-20:00, High demand period with 40% more deals available"
+                startTime: "18:00"
+                endTime: "20:00"
+                demandLevel: "high"
+        '401':
+          description: Unauthorized - Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    RestaurantDeal:
+      type: object
+      description: Restaurant deal information
+      required:
+        - restaurantObjectId
+        - restaurantName
+        - restaurantAddress1
+        - restaurantSuburb
+        - restaurantOpen
+        - restaurantClose
+        - dealObjectId
+        - discount
+        - dineIn
+        - lightning
+        - qtyLeft
+      properties:
+        restaurantObjectId:
+          type: string
+          description: Unique identifier for the restaurant
+          example: "507f1f77bcf86cd799439011"
+        restaurantName:
+          type: string
+          description: Name of the restaurant
+          example: "Pizza Palace"
+        restaurantAddress1:
+          type: string
+          description: Primary address line of the restaurant
+          example: "123 Main Street"
+        restaurantSuburb:
+          type: string
+          description: Suburb or district where the restaurant is located
+          example: "Downtown"
+        restaurantOpen:
+          type: string
+          format: time
+          description: Restaurant opening time
+          example: "11:00"
+        restaurantClose:
+          type: string
+          format: time
+          description: Restaurant closing time
+          example: "23:00"
+        dealObjectId:
+          type: string
+          description: Unique identifier for the deal
+          example: "507f1f77bcf86cd799439022"
+        discount:
+          type: string
+          description: Discount percentage or amount
+          example: "20"
+        dineIn:
+          type: string
+          description: Whether the deal is available for dine-in
+          enum: ["true", "false"]
+          example: "true"
+        lightning:
+          type: string
+          description: Whether this is a lightning deal (limited time)
+          enum: ["true", "false"]
+          example: "false"
+        qtyLeft:
+          type: string
+          description: Quantity of deals remaining
+          example: "15"
+
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Error code
+          example: "INVALID_REQUEST"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "The request parameters are invalid"
+        details:
+          type: string
+          description: Additional error details
+          example: "timeOfDay parameter must be one of: morning, afternoon, evening"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token for authentication
+
+tags:
+  - name: deals
+    description: Restaurant deals operations
+  - name: analytics
+    description: Analytics and reporting operations
