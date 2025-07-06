@@ -14,22 +14,28 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doCallRealMethod;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.util.ReflectionTestUtils.setField;
 
 @ExtendWith(MockitoExtension.class)
 class DefaultActiveDealsServiceTest {
+    final static DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("h:mm[a]");
 
     @Mock
     private WebClient webClient;
@@ -59,6 +65,7 @@ class DefaultActiveDealsServiceTest {
 
     @Test
     void shouldReturnEmptyDealsWhenRestaurantIsClosed() {
+        
         // Given
         Restaurant restaurant = createRestaurant("3:00pm", "9:00pm",
             createDeal("3:00pm", "9:00pm", 5L));
@@ -67,11 +74,16 @@ class DefaultActiveDealsServiceTest {
             .restaurants(List.of(restaurant))
             .build();
 
+        when(responseSpec.onStatus(ArgumentMatchers.any(), ArgumentMatchers.any()))
+            .thenReturn(responseSpec);
         when(responseSpec.bodyToMono(RestaurantResponse.class))
             .thenReturn(Mono.just(restaurantResponse));
 
+        // Simulate @PostConstruct
+        activeDealsService.initCache();
+
         // When
-        Mono<ActiveDealsResponse> result = activeDealsService.getActiveDealsAt("10:00pm");
+        Mono<ActiveDealsResponse> result = activeDealsService.getActiveDealsAt(LocalTime.parse("10:00pm", TIME_FORMATTER));
 
         // Then
         StepVerifier.create(result)
@@ -92,11 +104,15 @@ class DefaultActiveDealsServiceTest {
             .restaurants(List.of(restaurant))
             .build();
 
+        when(responseSpec.onStatus(ArgumentMatchers.any(), ArgumentMatchers.any()))
+            .thenReturn(responseSpec);
         when(responseSpec.bodyToMono(RestaurantResponse.class))
             .thenReturn(Mono.just(restaurantResponse));
+        // Simulate @PostConstruct
+        activeDealsService.initCache();
 
         // When
-        Mono<ActiveDealsResponse> result = activeDealsService.getActiveDealsAt("8:00pm");
+        Mono<ActiveDealsResponse> result = activeDealsService.getActiveDealsAt(LocalTime.parse("8:00pm", TIME_FORMATTER));
 
         // Then
         StepVerifier.create(result)
@@ -119,12 +135,16 @@ class DefaultActiveDealsServiceTest {
 
         DealsItem expectedDealsItem = createDealsItem("3:00pm", "9:00pm", 10L);
 
+        when(responseSpec.onStatus(ArgumentMatchers.any(), ArgumentMatchers.any()))
+            .thenReturn(responseSpec);
         when(responseSpec.bodyToMono(RestaurantResponse.class))
             .thenReturn(Mono.just(restaurantResponse));
         doCallRealMethod().when(activeDealsResponseMapper).mapToDealsItem(ArgumentMatchers.any(), ArgumentMatchers.any());
+        // Simulate @PostConstruct
+        activeDealsService.initCache();
 
         // When
-        Mono<ActiveDealsResponse> result = activeDealsService.getActiveDealsAt("5:00pm");
+        Mono<ActiveDealsResponse> result = activeDealsService.getActiveDealsAt(LocalTime.parse("5:00pm", TIME_FORMATTER));
 
         // Then
         StepVerifier.create(result)
@@ -151,12 +171,15 @@ class DefaultActiveDealsServiceTest {
 
         DealsItem expectedDealsItem = createDealsItem("1:00pm", "11:00pm", 4L);
 
+        when(responseSpec.onStatus(ArgumentMatchers.any(), ArgumentMatchers.any()))
+            .thenReturn(responseSpec);
         when(responseSpec.bodyToMono(RestaurantResponse.class))
             .thenReturn(Mono.just(restaurantResponse));
-
+        // Simulate @PostConstruct
+        activeDealsService.initCache();
 
         // When - requesting deals at 3:00pm (only first deal should be active)
-        Mono<ActiveDealsResponse> result = activeDealsService.getActiveDealsAt("7:00pm");
+        Mono<ActiveDealsResponse> result = activeDealsService.getActiveDealsAt(LocalTime.parse("7:00pm", TIME_FORMATTER));
         doCallRealMethod().when(activeDealsResponseMapper).mapToDealsItem(ArgumentMatchers.any(), ArgumentMatchers.any());
 
         // Then
@@ -177,11 +200,15 @@ class DefaultActiveDealsServiceTest {
             .restaurants(Collections.emptyList())
             .build();
 
+        when(responseSpec.onStatus(ArgumentMatchers.any(), ArgumentMatchers.any()))
+            .thenReturn(responseSpec);
         when(responseSpec.bodyToMono(RestaurantResponse.class))
             .thenReturn(Mono.just(restaurantResponse));
+        // Simulate @PostConstruct
+        activeDealsService.initCache();
 
         // When
-        Mono<ActiveDealsResponse> result = activeDealsService.getActiveDealsAt("4:00pm");
+        Mono<ActiveDealsResponse> result = activeDealsService.getActiveDealsAt(LocalTime.parse("4:00pm", TIME_FORMATTER));
 
         // Then
         StepVerifier.create(result)
@@ -205,11 +232,15 @@ class DefaultActiveDealsServiceTest {
             .restaurants(List.of(restaurant))
             .build();
 
+        when(responseSpec.onStatus(ArgumentMatchers.any(), ArgumentMatchers.any()))
+            .thenReturn(responseSpec);
         when(responseSpec.bodyToMono(RestaurantResponse.class))
             .thenReturn(Mono.just(restaurantResponse));
+        // Simulate @PostConstruct
+        activeDealsService.initCache();
 
         // When
-        Mono<ActiveDealsResponse> result = activeDealsService.getActiveDealsAt("4:00pm");
+        Mono<ActiveDealsResponse> result = activeDealsService.getActiveDealsAt(LocalTime.parse("4:00pm"));
 
         // Then
         StepVerifier.create(result)
@@ -220,6 +251,121 @@ class DefaultActiveDealsServiceTest {
             .verifyComplete();
 
     }
+
+    @Test
+    void shouldHandleMultipleRestaurantsWithMixedActiveDeals() {
+        // Given
+        Restaurant restaurant1 = createRestaurant("3:00pm", "9:00pm",
+            createDeal("3:00pm", "9:00pm", 5L));
+
+        Restaurant restaurant2 = createRestaurant("12:00pm", "11:00pm",
+            createDeal("12:00pm", "11:00pm", 3L));
+
+        Restaurant restaurant3 = createRestaurant("6:00pm", "10:00pm",
+            createDeal("6:00pm", "10:00pm", 0L));
+
+        RestaurantResponse restaurantResponse = RestaurantResponse.builder()
+            .restaurants(Arrays.asList(restaurant1, restaurant2, restaurant3))
+            .build();
+
+        when(responseSpec.onStatus(ArgumentMatchers.any(), ArgumentMatchers.any()))
+            .thenReturn(responseSpec);
+        when(responseSpec.bodyToMono(RestaurantResponse.class))
+            .thenReturn(Mono.just(restaurantResponse));
+        doCallRealMethod().when(activeDealsResponseMapper).mapToDealsItem(ArgumentMatchers.any(), ArgumentMatchers.any());
+
+        // Simulate @PostConstruct
+        activeDealsService.initCache();
+
+        // When
+        Mono<ActiveDealsResponse> result = activeDealsService.getActiveDealsAt(LocalTime.parse("4:00pm", TIME_FORMATTER));
+
+        // Then
+        StepVerifier.create(result)
+            .assertNext(response -> {
+                assertThat(response).isNotNull();
+                assertThat(response.getDeals()).hasSize(2);
+            })
+            .verifyComplete();
+    }
+
+    @Test
+    void shouldUseCacheForConsecutiveCalls() {
+        // Given
+        Restaurant restaurant = createRestaurant("3:00pm", "9:00pm",
+            createDeal("3:00pm", "9:00pm", 5L));
+
+        RestaurantResponse restaurantResponse = RestaurantResponse.builder()
+            .restaurants(List.of(restaurant))
+            .build();
+
+        when(responseSpec.onStatus(ArgumentMatchers.any(), ArgumentMatchers.any()))
+            .thenReturn(responseSpec);
+        when(responseSpec.bodyToMono(RestaurantResponse.class))
+            .thenReturn(Mono.just(restaurantResponse));
+        doCallRealMethod().when(activeDealsResponseMapper).mapToDealsItem(ArgumentMatchers.any(), ArgumentMatchers.any());
+
+        // Simulate @PostConstruct
+        activeDealsService.initCache();
+
+        // When - call twice in a row under TTL
+        Mono<ActiveDealsResponse> result1 = activeDealsService.getActiveDealsAt(LocalTime.parse("4:00pm", TIME_FORMATTER));
+        Mono<ActiveDealsResponse> result2 = activeDealsService.getActiveDealsAt(LocalTime.parse("4:00pm", TIME_FORMATTER));
+
+        // Then
+        StepVerifier.create(result1)
+            .assertNext(response -> assertThat(response.getDeals()).hasSize(1))
+            .verifyComplete();
+
+        StepVerifier.create(result2)
+            .assertNext(response -> assertThat(response.getDeals()).hasSize(1))
+            .verifyComplete();
+
+        verify(webClient, times(1)).get();
+    }
+
+    @Test
+    void shouldHandleServerErrorResponses() {
+
+        // Mock 5xx error response
+        when(responseSpec.onStatus(ArgumentMatchers.any(), ArgumentMatchers.any()))
+            .thenReturn(responseSpec);
+        when(responseSpec.bodyToMono(RestaurantResponse.class))
+            .thenReturn(Mono.error(new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error")));
+
+        // When
+        activeDealsService.initCache();
+        Mono<ActiveDealsResponse> result = activeDealsService.getActiveDealsAt(LocalTime.parse("4:00pm", TIME_FORMATTER));
+
+        // Then
+        StepVerifier.create(result)
+            .expectErrorMatches(throwable ->
+                throwable instanceof HttpServerErrorException &&
+                    ((HttpServerErrorException) throwable).getStatusCode().equals(HttpStatus.INTERNAL_SERVER_ERROR))
+            .verify();
+    }
+
+    @Test
+    void shouldHandleClientAndServerErrorResponses() {
+
+        // Mock 5xx error response
+        when(responseSpec.onStatus(ArgumentMatchers.any(), ArgumentMatchers.any()))
+            .thenReturn(responseSpec);
+        when(responseSpec.bodyToMono(RestaurantResponse.class))
+            .thenReturn(Mono.error(new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error")));
+
+        // When
+        activeDealsService.initCache();
+        Mono<ActiveDealsResponse> result = activeDealsService.getActiveDealsAt(LocalTime.parse("4:00pm", TIME_FORMATTER));
+
+        // Then
+        StepVerifier.create(result)
+            .expectErrorMatches(throwable ->
+                throwable instanceof HttpServerErrorException &&
+                    ((HttpServerErrorException) throwable).getStatusCode().equals(HttpStatus.INTERNAL_SERVER_ERROR))
+            .verify();
+    }
+
 
     private Restaurant createRestaurant(String open, String close, Deals... deals) {
         return Restaurant.builder()

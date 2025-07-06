@@ -1,5 +1,6 @@
 package org.eatclub.codingchallenge.service;
 
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eatclub.codingchallenge.model.Deals;
@@ -9,8 +10,10 @@ import org.eatclub.codingchallenge.model.response.ActiveDealsResponse;
 import org.eatclub.codingchallenge.model.response.DealsItem;
 import org.eatclub.codingchallenge.util.ActiveDealsResponseMapper;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
@@ -32,28 +35,35 @@ public class DefaultActiveDealsService implements ActiveDealsService {
     private String restaurantsUrl;
     @Value("${upstream.restaurants.cacheTTL}")
     private int cacheTTL;
+    private Mono<RestaurantResponse> cachedRestaurantResponse;
 
-    @Override
-    public Mono<ActiveDealsResponse> getActiveDealsAt(String timeOfDay) {
-
-        final LocalTime timeOfDayLocalTime = LocalTime.parse(timeOfDay, TIME_FORMATTER);
-
-        return webClient
+    // Cache the initial response and make it a "hot source"
+    @PostConstruct
+    public void initCache() {
+        this.cachedRestaurantResponse = webClient
             .get()
             .uri(restaurantsUrl)
             .retrieve()
+            .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
+                response -> Mono.error(new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error")))
             .bodyToMono(RestaurantResponse.class)
             .cache(Duration.ofSeconds(cacheTTL))
-            .map(restaurantResponse -> {
-                final List<DealsItem> dealsItemList = restaurantResponse.getRestaurants()
+            .doOnNext(response -> log.debug("Fetched {} restaurants from upstream service", response.getRestaurants().size()));
+    }
+
+    @Override
+    public Mono<ActiveDealsResponse> getActiveDealsAt(LocalTime timeOfDay) {
+
+        return cachedRestaurantResponse.map(restaurantResponse -> {
+            final List<DealsItem> dealsItemList = restaurantResponse.getRestaurants()
+                .stream()
+                .flatMap(restaurant -> restaurant.getDeals()
                     .stream()
-                    .flatMap(restaurant -> restaurant.getDeals()
-                        .stream()
-                        .filter(deal -> isDealActive(restaurant, deal, timeOfDayLocalTime))
-                        .map(activeDeal -> this.activeDealsResponseMapper.mapToDealsItem(restaurant, activeDeal)))
-                    .toList();
-                return ActiveDealsResponse.builder().deals(dealsItemList).build();
-            });
+                    .filter(deal -> isDealActive(restaurant, deal, timeOfDay))
+                    .map(activeDeal -> this.activeDealsResponseMapper.mapToDealsItem(restaurant, activeDeal)))
+                .toList();
+            return ActiveDealsResponse.builder().deals(dealsItemList).build();
+        });
     }
 
     private boolean isDealActive(
