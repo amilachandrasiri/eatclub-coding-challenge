@@ -35,6 +35,7 @@ public class DefaultPeakDealTimeRangeService implements PeakDealTimeRangeService
                             // Actual start time and end times are calculated with following order of priority
                             // deal start -> deal open -> restaurant open
                             // deal end -> deal close -> restaurant close
+                            log.info("formatter :" + TIME_FORMATTER);
                             final LocalTime start = !ObjectUtils.isEmpty(deal.getStart())
                                 ? LocalTime.parse(deal.getStart(), TIME_FORMATTER)
                                 : !ObjectUtils.isEmpty(deal.getOpen())
