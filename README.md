@@ -44,19 +44,20 @@ ER diagram for the database
 - GraalVM plugin is enabled but not used just because I wanted to mess around with its functionality
 - Project uses embedded Netty server
 - Project is dockerised but disabled
-- Basic spring security is configured, and all requests are authenticated against a single admin
-  <br> user specified in [App config file](./src/main/resources/application.properties)
+- No security implementation is included with this exercise, the APIs are openly accessible
 - if a deal doesn't have start/end times, it is assumed the deal is available throughout the
   <br> restaurant opening hours
 - Deal open/close times are calculated according to following logic
   <br> deal start -> deal open -> restaurant open
   <br> deal end -> deal close -> restaurant close
 - Deals with less than 1 qty available are excluded
-- No security implementation is included with this exercise, the APIs are openly accessible
 - If there are no restaurants available, the responses will be null
 - Assuming time format to be "h:mma"
+- Assuming example in task 1 is missing the am/pm token
+- Basic error handling is implemented, all internal errors will return a 500, if the time format provided is
+  <br>invalid, a 400 will return
 
 ### Tools and AI usage
 - Tools such as Intellij code generation and auto-completion have been used
-- AI assistant usage was limited to test case and test data generation only, primary logic was written by hand 
-  <br> using web, library and API references 
+- AI assistant usage was limited to OpenAPI spec, test case and test data generation only.
+- Primary logic was written by hand using web, library and API references 
