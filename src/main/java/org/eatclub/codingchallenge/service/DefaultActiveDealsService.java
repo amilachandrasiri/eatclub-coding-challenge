@@ -1,60 +1,33 @@
 package org.eatclub.codingchallenge.service;
 
-import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.eatclub.codingchallenge.model.Deals;
 import org.eatclub.codingchallenge.model.Restaurant;
-import org.eatclub.codingchallenge.model.RestaurantResponse;
 import org.eatclub.codingchallenge.model.response.ActiveDealsResponse;
 import org.eatclub.codingchallenge.model.response.DealsItem;
 import org.eatclub.codingchallenge.util.ActiveDealsResponseMapper;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
-import org.springframework.web.client.HttpServerErrorException;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
 import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
+
+import static org.eatclub.codingchallenge.util.Constants.TIME_FORMATTER;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class DefaultActiveDealsService implements ActiveDealsService {
 
-    final static DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("h:mm[a]");
-
-    private final WebClient webClient;
+    private final RestaurantService restaurantService;
     private final ActiveDealsResponseMapper activeDealsResponseMapper;
-    @Value("${upstream.restaurants.url}")
-    private String restaurantsUrl;
-    @Value("${upstream.restaurants.cacheTTL}")
-    private int cacheTTL;
-    private Mono<RestaurantResponse> cachedRestaurantResponse;
-
-    // Cache the initial response and make it a "hot source"
-    @PostConstruct
-    public void initCache() {
-        this.cachedRestaurantResponse = webClient
-            .get()
-            .uri(restaurantsUrl)
-            .retrieve()
-            .onStatus(status -> status.is4xxClientError() || status.is5xxServerError(),
-                response -> Mono.error(new HttpServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error")))
-            .bodyToMono(RestaurantResponse.class)
-            .cache(Duration.ofSeconds(cacheTTL))
-            .doOnNext(response -> log.debug("Fetched {} restaurants from upstream service", response.getRestaurants().size()));
-    }
 
     @Override
     public Mono<ActiveDealsResponse> getActiveDealsAt(LocalTime timeOfDay) {
 
-        return cachedRestaurantResponse.map(restaurantResponse -> {
+        return restaurantService.getRestaurants().map(restaurantResponse -> {
             final List<DealsItem> dealsItemList = restaurantResponse.getRestaurants()
                 .stream()
                 .flatMap(restaurant -> restaurant.getDeals()

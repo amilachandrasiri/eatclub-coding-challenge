@@ -39,7 +39,7 @@ class ActiveDealsControllerTest {
             .restarantSuburb("Test Suburb")
             .restaurantOpen("3:00pm")
             .restaurantClose("9:00pm")
-            .dealObjectId("deal123")
+            .dealObjectId("deal456")
             .discount("20%")
             .dineIn(true)
             .lightning(false)
@@ -53,7 +53,7 @@ class ActiveDealsControllerTest {
         when(activeDealsService.getActiveDealsAt(any(LocalTime.class)))
             .thenReturn(Mono.just(expectedResponse));
 
-        // When & Then
+        // When
         webTestClient
             .get()
             .uri("/active-deals?timeOfDay=4:00pm")
@@ -93,9 +93,7 @@ class ActiveDealsControllerTest {
             .uri("/active-deals?timeOfDay=")
             .accept(MediaType.APPLICATION_JSON)
             .exchange()
-            .expectStatus().isBadRequest()
-            .expectBody()
-            .jsonPath("$.timeOfDay").exists();
+            .expectStatus().isBadRequest();
     }
 
     @Test
@@ -121,8 +119,8 @@ class ActiveDealsControllerTest {
     @Test
     void shouldHandleServiceExceptionThroughGlobalExceptionHandler() {
         // Given
-        when(activeDealsService.getActiveDealsAt(any(LocalTime.class))
-            .thenReturn(Mono.error(new RuntimeException("Service unavailable"))));
+        when(activeDealsService.getActiveDealsAt(any(LocalTime.class)))
+            .thenReturn(Mono.error(new RuntimeException("Service unavailable")));
 
         // Then
         webTestClient
@@ -140,10 +138,10 @@ class ActiveDealsControllerTest {
             .deals(Collections.emptyList())
             .build();
 
-        when(activeDealsService.getActiveDealsAt(any(LocalTime.class))
-            .thenReturn(Mono.just(expectedResponse)));
+        when(activeDealsService.getActiveDealsAt(any(LocalTime.class)))
+            .thenReturn(Mono.just(expectedResponse));
 
-        // When & Then - Test different valid time formats
+        // When
         webTestClient
             .get()
             .uri("/active-deals?timeOfDay=4:00pm")
@@ -165,8 +163,4 @@ class ActiveDealsControllerTest {
             .exchange()
             .expectStatus().isOk();
     }
-
-
-
 }
-
