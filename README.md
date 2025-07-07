@@ -14,6 +14,30 @@ here: [EatClub Tech Challenge](./EatClub%20Tech%20Challenge%20-%20Java%20AWS%20-
 - Task 2:
   - run `curl http://localhost:8080/api/peak-time-window`
 
+### Bonus tasks
+Database recommendation: Relational database schema with AWS Aurora (PostgreSQL)
+
+Reasoning:
+- The structure of data could be effectively presented in a relational manner (A restaurant can have many Deals etc.)
+- Cuisines can be normalised in to its own entity with a many-to-many relation with Restaurant entity
+- This relational model will allow fast and efficient queries (given appropriate indexes for a business case are used)
+  <br> on what I can assume as reasonable use cases, such as:
+  - Deals in a suburb
+  - Filter by Cuisine
+  - Max discount deals and offering restaurants
+  - Deal available times (via appropriate indexing)
+- Use of Postgres on Aurora gives us:
+  - Advantages of being a AWS managed DB (availability, maintenance, backups etc)
+  - Option of using binary json storage format like Jsonb should the need arise to store extensible<br>
+    NoSQL like data (cuisines etc.)
+  - Ability to tune cost/performance for real world needs without downtime
+
+Note: above is presented without knowledge of how this data will be stored/queried in a production system, <br>
+recommendations may need revision depending on use case.
+
+ER diagram for the database
+![img.png](img.png)
+
 ## Assumptions and implementation notes
 
 - Project is written in Java targeting v21
